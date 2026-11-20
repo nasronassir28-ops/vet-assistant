@@ -1,0 +1,100 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Bubblewrap
+        run: npm install -g @bubblewrap/cli
+
+      - name: Point Bubblewrap to JDK and Android SDK
+        run: |
+          mkdir -p ~/.bubblewrap
+          cat > ~/.bubblewrap/config.json <<EOF
+          {"jdkPath":"$JAVA_HOME","androidSdkPath":"$ANDROID_HOME"}
+          EOF
+
+      - name: Create app manifest
+        run: |
+          mkdir -p twa && cd twa
+          cat > twa-manifest.json <<'EOF'
+          {
+            "packageId": "io.github.nasronassir28_ops.vet",
+            "host": "nasronassir28-ops.github.io",
+            "name": "المساعد البيطري",
+            "launcherName": "المساعد البيطري",
+            "display": "standalone",
+            "themeColor": "#176b55",
+            "themeColorDark": "#176b55",
+            "navigationColor": "#176b55",
+            "navigationColorDark": "#176b55",
+            "navigationDividerColor": "#176b55",
+            "navigationDividerColorDark": "#176b55",
+            "backgroundColor": "#f4f7f5",
+            "enableNotifications": false,
+            "startUrl": "/vet-assistant/index.html",
+            "iconUrl": "https://nasronassir28-ops.github.io/vet-assistant/icon-512.png",
+            "maskableIconUrl": "https://nasronassir28-ops.github.io/vet-assistant/icon-maskable-512.png",
+            "webManifestUrl": "https://nasronassir28-ops.github.io/vet-assistant/manifest.json",
+            "fullScopeUrl": "https://nasronassir28-ops.github.io/vet-assistant/",
+            "splashScreenFadeOutDuration": 300,
+            "signingKey": { "path": "./android.keystore", "alias": "android" },
+            "appVersionName": "1.0.0",
+            "appVersionCode": 1,
+            "shortcuts": [],
+            "generatorApp": "bubblewrap-cli",
+            "fallbackType": "customtabs",
+            "features": {},
+            "alphaDependencies": { "enabled": false },
+            "enableSiteSettingsShortcut": true,
+            "isChromeOSOnly": false,
+            "isMetaQuest": false,
+            "minSdkVersion": 21,
+            "orientation": "default",
+            "fingerprints": [],
+            "additionalTrustedOrigins": [],
+            "retainedBundles": [],
+            "protocolHandlers": []
+          }
+          EOF
+
+      - name: Create signing key
+        working-directory: twa
+        run: |
+          PASS=$(openssl rand -hex 12)
+          keytool -genkeypair -v -keystore android.keystore -alias android \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass "$PASS" -keypass "$PASS" \
+            -dname "CN=Vet Assistant"
+          echo "BUBBLEWRAP_KEYSTORE_PASSWORD=$PASS" >> "$GITHUB_ENV"
+          echo "BUBBLEWRAP_KEY_PASSWORD=$PASS" >> "$GITHUB_ENV"
+
+      - name: Generate Android project
+        working-directory: twa
+        run: bubblewrap update --skipVersionUpgrade
+
+      - name: Build signed APK
+        working-directory: twa
+        run: bubblewrap build --skipPwaValidation
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: vet-assistant-apk
+          path: twa/app-release-signed.apk
