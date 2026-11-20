@@ -100,5 +100,13 @@ jobs:
 
       - name: Build signed APK
         working-directory: twa
-        run: |
-          export ANDROID_HOME="$ANDROID_SDK_D
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_SDK_DIR }}
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_DIR }}
+        run: bubblewrap build --skipPwaValidation
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: vet-assistant-apk
+          path: twa/app-release-signed.apk
