@@ -26,12 +26,13 @@ jobs:
       - name: Create Capacitor project
         run: |
           npm init -y
-          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 @capacitor/filesystem@6 @capacitor/share@6
+          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 @capacitor/filesystem@6 @capacitor/share@6 @capacitor-firebase/authentication@6 firebase@10
           npx cap add android
-          npx cap sync android
 
-      - name: Add native printing and app icon
+      - name: Add Firebase, native printing and app icon
         run: |
+          cp google-services.json android/app/google-services.json
+          sed -i 's/^ext {/ext {\n    rgcfaIncludeGoogle = true/' android/variables.gradle
           mkdir -p android/app/src/main/java/com/vetassistant/app
           cp MainActivity.java android/app/src/main/java/com/vetassistant/app/MainActivity.java
           RES=android/app/src/main/res
@@ -41,13 +42,28 @@ jobs:
             cp icon-192.png $d/ic_launcher.png
             cp icon-192.png $d/ic_launcher_round.png
           done
+          npx cap sync android
 
-      - name: Build APK
+      - name: Build release APK
         working-directory: android
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleRelease
+
+      - name: Sign APK with the permanent key
+        env:
+          KEY_PASSPHRASE: ${{ secrets.KEY_PASSPHRASE }}
+        run: |
+          gpg --batch --yes --pinentry-mode loopback --passphrase "$KEY_PASSPHRASE" -o release.keystore -d signing/release.keystore.gpg
+          BT=$ANDROID_HOME/build-tools/$(ls $ANDROID_HOME/build-tools | sort -V | tail -1)
+          $BT/zipalign -p -f 4 android/app/build/outputs/apk/release/app-release-unsigned.apk aligned.apk
+          $BT/apksigner sign --ks release.keystore --ks-key-alias vet --ks-pass env:KEY_PASSPHRASE --key-pass env:KEY_PASSPHRASE --out vet-assistant.apk aligned.apk
+          rm release.keystore
+          echo '### APK signer' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          $BT/apksigner verify --print-certs vet-assistant.apk | grep -E "SHA-1|SHA-256" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: vet-assistant-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: vet-assistant.apk
