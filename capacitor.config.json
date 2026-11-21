@@ -2,5 +2,11 @@
   "appId": "com.vetassistant.app",
   "appName": "المساعد البيطري",
   "webDir": "www",
-  "server": { "androidScheme": "https" }
+  "server": { "androidScheme": "https" },
+  "plugins": {
+    "FirebaseAuthentication": {
+      "skipNativeAuth": false,
+      "providers": ["google.com"]
+    }
+  }
 }
