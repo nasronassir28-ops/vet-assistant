@@ -1,0 +1,42 @@
+name: Create signing key (run once)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  create-key:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check
+        env:
+          KEY_PASSPHRASE: ${{ secrets.KEY_PASSPHRASE }}
+        run: |
+          if [ -z "$KEY_PASSPHRASE" ]; then echo "Missing secret KEY_PASSPHRASE"; exit 1; fi
+          if [ -f signing/release.keystore.gpg ]; then echo "Key already exists. Not creating a new one."; exit 1; fi
+
+      - name: Create key
+        env:
+          KEY_PASSPHRASE: ${{ secrets.KEY_PASSPHRASE }}
+        run: |
+          mkdir -p signing
+          keytool -genkeypair -keystore release.keystore -storetype PKCS12 -alias vet -keyalg RSA -keysize 2048 -validity 10000 -storepass "$KEY_PASSPHRASE" -keypass "$KEY_PASSPHRASE" -dname "CN=Vet Assistant, C=DZ"
+          gpg --batch --yes --pinentry-mode loopback --symmetric --cipher-algo AES256 --passphrase "$KEY_PASSPHRASE" -o signing/release.keystore.gpg release.keystore
+          keytool -list -v -keystore release.keystore -storepass "$KEY_PASSPHRASE" | grep -E "SHA1|SHA256" | sed 's/^[ \t]*//' > signing/fingerprints.txt
+          rm release.keystore
+          echo '### SHA fingerprints (copy SHA1 to Firebase)' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat signing/fingerprints.txt >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Save encrypted key to repository
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add signing
+          git commit -m "Add encrypted signing key"
+          git push
