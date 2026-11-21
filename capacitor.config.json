@@ -1,0 +1,6 @@
+{
+  "appId": "com.vetassistant.app",
+  "appName": "المساعد البيطري",
+  "webDir": "www",
+  "server": { "androidScheme": "https" }
+}
