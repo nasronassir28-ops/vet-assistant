@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "203192580627",
+    "project_id": "vet-assistant-dz",
+    "storage_bucket": "vet-assistant-dz.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:203192580627:android:0731a54a2bbbe680d55de6",
+        "android_client_info": {
+          "package_name": "com.vetassistant.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "203192580627-0q8oldb2eekj429pb1d9bms691j80paf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.vetassistant.app",
+            "certificate_hash": "e58b474bba7794ec9966fe07a0aaae5fb69319c4"
+          }
+        },
+        {
+          "client_id": "203192580627-c4hve2ri9ge9dm6rcru1q15i90k7si0s.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB9zdlYRGQYhTn2cSg1xwhQNtP-j3rsjDM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "203192580627-c4hve2ri9ge9dm6rcru1q15i90k7si0s.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
